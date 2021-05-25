@@ -1,6 +1,8 @@
 [tool.poetry]
 name = "fibery"
-version = "0.2.0"
+version = "0.3.0"
+homepage = "https://github.com/sergio-bershadsky/fibery"
+repository = "https://github.com/sergio-bershadsky/fibery"
 description = "Python SDK for working with Fibery.io"
 authors = ["Sergio Bershadsky <sergio.bershadsky@gmail.com>"]
 include = ["fibery/console/commands/js/*.js"]
