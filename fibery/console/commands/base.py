@@ -62,7 +62,7 @@ class Output:
 
     def output_json(self):
         data = self.data
-        data = json.dumps(data, indent=2)
+        data = json.dumps(data, indent=2, default=lambda v: str(v))
         typer.echo(data)
 
 
