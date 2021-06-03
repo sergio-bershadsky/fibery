@@ -1,13 +1,12 @@
-# Goal
+# Road map
 
-Create flexible Tools set for working with Fibery.io
+## SDK
 
-# Feature
+- Pythonic way to query and mutate Fibery entities
+- Base Synchronisation class entities
 
-- CLI tools
-  - Tool to Manage user tokens via pyppeteer adhoc
-  - Tool to Manage resources
-    - Web-hooks, Schema, Types.
-  - Tool to work with data
-- Python SDK library
-- Django SDK library
+# Console
+
+- Django model boilerplate
+- SQL Alchemy model boilerplate
+- Simplify work with JS Scripts, synchronization in AppEngine style
