@@ -1,0 +1,27 @@
+site_name: Python-Fibery
+repo_url: http://github.com/sergio-bershadsky/fibery
+nav:
+  - Home:
+    - Introduction: index.md
+    - Installation: install.md
+    - Contribute: contribute.md
+  - Console:
+    - API: cli/api.md
+    - Auth: cli/auth.md
+    - Config: cli/config.md
+    - Describe: cli/describe.md
+  - Python API:
+    - Introduction: api/index.md
+    - Test: api/test.md
+theme:
+  name: material
+  font:
+    text: Roboto
+  features:
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: http://github.com/sergio-bershadsky/fibery

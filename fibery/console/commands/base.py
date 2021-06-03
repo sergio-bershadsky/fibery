@@ -1,12 +1,14 @@
+import functools
 import json
 
-from dataclasses import dataclass
 from typing import Dict
 from typing import List
 from typing import Literal
+from typing import Optional
 from typing import Union
 
 import typer
+import yaml
 
 from pydantic import BaseModel
 from tabulate import tabulate
@@ -14,13 +16,37 @@ from tabulate import tabulate
 from fibery.conf import settings
 
 
-@dataclass
+def handle_item(item, exclude: List[str] = None):
+    for key in exclude or []:
+        if isinstance(item, dict):
+            item.pop(key, None)
+    if settings.output_format == "text":
+        for k, v in item.items():
+            if isinstance(v, (list, dict)):
+                item[k] = yaml.dump(v, Dumper=yaml.Dumper, default_style="", allow_unicode=True)
+    return item
+
+
 class Output:
 
     data: Union[BaseModel, Dict, List, str]
     headers: Union[Literal["keys", "firstrow"], List[str]] = None
+    exclude: Optional[List[str]] = None
 
-    def __post_init__(self):
+    def __init__(self, data, headers=None, exclude=None):
+        if isinstance(data, list):
+            data = list(map(functools.partial(handle_item, exclude=exclude), data))
+        elif isinstance(data, BaseModel):
+            data = data.dict()
+            data = handle_item(data, exclude)
+        elif isinstance(data, dict):
+            data = handle_item(data, exclude)
+
+        self.data = data
+        self.headers = headers
+        self.exclude = exclude
+
+    def echo(self):
         try:
             getattr(self, f"output_{settings.output_format}")()
         except AttributeError:
@@ -28,9 +54,7 @@ class Output:
 
     def output_text(self):
         data = self.data
-        if isinstance(data, BaseModel):
-            data = list(data.dict().items())
-        elif isinstance(data, str):
+        if isinstance(data, str):
             data = [[data]]
         elif isinstance(data, dict):
             data = list(data.items())
@@ -38,10 +62,7 @@ class Output:
 
     def output_json(self):
         data = self.data
-        if isinstance(data, BaseModel):
-            data = data.json(indent=2)
-        else:
-            data = json.dumps(data, indent=2)
+        data = json.dumps(data, indent=2)
         typer.echo(data)
 
 

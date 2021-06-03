@@ -34,7 +34,7 @@ def token_create():
     async def login_and_create_token():
         async with action.login(settings.username, password, settings.workspace, settings.login_url) as page:
             result = await action.do_create_token(page)
-            output(result, headers=["Token created"])
+            output(result, headers=["Token created"]).echo()
 
     run(login_and_create_token())
 
@@ -48,7 +48,7 @@ def token_list():
     async def login_and_list_tokens():
         async with action.login(settings.username, password, settings.workspace, settings.login_url) as page:
             result = await action.do_list_tokens(page)
-            output(result, headers="keys")
+            output(result, headers="keys").echo()
 
     run(login_and_list_tokens())
 
@@ -62,6 +62,6 @@ def token_delete(token_id: str = typer.Option(...)):
     async def login_and_delete_token():
         async with action.login(settings.username, password, settings.workspace, settings.login_url) as page:
             result = await action.do_delete_token(page, token_id)
-            output(result)
+            output(result).echo()
 
     run(login_and_delete_token())

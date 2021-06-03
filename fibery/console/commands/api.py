@@ -59,4 +59,4 @@ def call(
     format: FormatEnum = FormatEnum.json,
 ):
     settings.output_format = format
-    output(method(**arg))
+    output(method(**arg)).echo()

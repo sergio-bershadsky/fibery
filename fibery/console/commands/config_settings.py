@@ -9,4 +9,4 @@ settings = typer.Typer()
 
 @settings.command(name="show")
 def settings_get():
-    output(fibery_settings, headers=["name", "value"])
+    output(fibery_settings, headers=["name", "value"]).echo()

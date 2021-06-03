@@ -1,10 +1,12 @@
+import functools
+
 import typer
 
-from typer import Option
+from click import ClickException
+from typer import Argument
 
 from fibery.client.fibery import Fibery
 from fibery.client.schema import FiberySchema
-from fibery.conf import settings
 from fibery.console.commands.base import output
 from fibery.console.commands.utils import default_client
 
@@ -12,94 +14,107 @@ from fibery.console.commands.utils import default_client
 describe = typer.Typer()
 
 
-def list_types(schema: FiberySchema, filter_application):
+def get_schema() -> FiberySchema:
+    fibery = Fibery(client=default_client())
+    return fibery.schema.get()
+
+
+def handle_exceptions(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            f(*args, **kwargs)
+        except Exception as e:
+            raise ClickException(str(e))
+
+    return wrapper
+
+
+@describe.command("applications")
+@handle_exceptions
+def list_applications():
+    """
+    List all Fibery apps on your account
+    """
+    schema = get_schema()
+    result = [app.dict() for app in schema.list_applications()]
+    for item in result:
+        item["types"] = len(item["types"])
+    output(result, headers="keys").echo()
+
+
+@describe.command("types")
+@handle_exceptions
+def list_types(application: str = None):
+    """
+    List Fibery types on your account
+    """
+    schema = get_schema()
     result = []
-    for fibery_type in sorted(schema.types, key=lambda v: v.name):
-        application, table = fibery_type.name.split("/", 1)
-        if filter_application and filter_application != application:
-            continue
+    for fibery_type in schema.list_types(application):
         result.append(
             {
-                "ID": fibery_type.id,
-                "Application": application,
                 "Name": fibery_type.name,
                 "Fields number": len(fibery_type.fields),
             }
         )
-
-    output(result, headers="keys")
-
-
-def _describe_type(schema, name):
-    for fibery_type in schema.types:
-        if fibery_type.name.strip() == name.strip():
-            break
-    else:
-        raise Exception(f"Type '{name}' does not exists")
-
-    if settings.output_format == "text":
-        fibery_type = fibery_type.dict()
-
-        meta = fibery_type.pop("meta", None)
-        fields = fibery_type.pop("fields", None)
-
-        typer.echo("Type:")
-        output(fibery_type, headers=["property", "value"])
-        typer.echo("\n")
-        typer.echo("Meta:")
-        output(meta, headers=["property", "value"])
-        typer.echo("\n")
-        typer.echo("Fields:")
-        output(list(sorted(fields, key=lambda v: v["name"])), headers="keys")
+    output(result, headers="keys").echo()
 
 
-@describe.command(name="type")
-def describe_type(
-    name: str = Option(None, help="Get type by name"),
-    application: str = Option(None, help="Filter by application name, applied if only name is empty"),
-):
+@describe.command("type")
+@handle_exceptions
+def get_type(name: str):
     """
-    List/Get Fibery types
+    Describe single Fibery type with all attributes on your account
     """
-    fibery = Fibery(client=default_client())
-
-    schema = fibery.schema.get()
-
-    if name:
-        return _describe_type(schema, name)
-    else:
-        return list_types(schema, application)
+    schema = get_schema()
+    fibery_type = schema.get_type(name)
+    result = fibery_type.dict()
+    result.update({"fields": [f.name for f in fibery_type.fields]})
+    output(result).echo()
 
 
-@describe.command(name="field")
-def describe_field(
-    name: str = Option(None, help="Get type by name"),
-    application: str = Option(None, help="Filter by application name, applied if only name is empty"),
-):
+@describe.command("fields")
+@handle_exceptions
+def list_fields(fibery_type: str = Argument(..., metavar="type")):
     """
-    List/Get Fibery types
+    List Fibery all Type fields on your account
     """
-    fibery = Fibery(client=default_client())
+    schema = get_schema()
+    fibery_type = schema.get_type(fibery_type)
+    result = []
+    for field in fibery_type.fields:
+        result.append(
+            {
+                "Name": field.name,
+                "Type": field.type,
+            }
+        )
+    output(result, headers="keys").echo()
 
-    schema = fibery.schema.get()
 
-    if name:
-        return _describe_type(schema, name)
-    else:
-        return list_types(schema, application)
-
-
-@describe.command(name="webhook")
-def describe_webhook():
+@describe.command("field")
+@handle_exceptions
+def get_field(fibery_type: str = Argument(..., metavar="type"), name: str = Argument(...)):
     """
-    List available hooks
+    Get single Field description on your account
+    """
+    schema = get_schema()
+    fibery_type = schema.get_type(fibery_type)
+    result = fibery_type.get_field(name)
+    output(result).echo()
+
+
+@describe.command(name="webhooks")
+def list_webhooks():
+    """
+    List all registered hooks on your account
     """
     fibery = Fibery(client=default_client())
     webhooks = fibery.webhook.list()
 
     result = []
-    for item in webhooks.dict()["__root__"]:
-        item.pop("runs")
-        result.append(item)
+    for webhook in webhooks:
+        result.append(webhook.dict())
 
-    output(result, headers="keys")
+    output(result, headers="keys", exclude=["runs"]).echo()
